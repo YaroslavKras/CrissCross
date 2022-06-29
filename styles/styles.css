@@ -1,0 +1,76 @@
+:root {
+    --border: 2px solid black;
+}
+
+body {
+    background-color: gray;
+    border: darkred;
+}
+.button{
+    position: center;
+    margin-left: auto;
+    margin-right: auto;
+}
+#gaming-field {
+    display: grid;
+    gap: 0;
+    grid-template-columns: repeat(3, 1fr);
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: auto;
+    width: 900px;
+    height: 900px;
+    background-color: white;
+}
+.move-image{
+    width: 90%; /* or any custom size */
+    height: 90%;
+    object-fit: contain;
+}
+
+.upper-left {
+    border-right: var(--border);
+    border-bottom: var(--border);
+}
+
+.upper-mid {
+    border: var(--border);
+    border-top: 0;
+}
+
+.upper-right {
+    border-left: var(--border);
+    border-bottom: var(--border);
+}
+
+.mid-left {
+    border: var(--border);
+    border-left: 0;
+}
+
+.mid {
+    border: var(--border);
+}
+
+.mid-right {
+    border: var(--border);
+    border-right: 0;
+}
+
+.lower-left {
+    border-right: var(--border);
+    border-top: var(--border);
+}
+
+.lower-mid {
+    border: var(--border);
+    border-bottom: 0;
+}
+
+.lower-right {
+    border-left: var(--border);
+    border-top: var(--border);
+}
