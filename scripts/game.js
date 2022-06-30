@@ -1,9 +1,10 @@
 const field = document.getElementById('gaming-field');
 const playerMoves = [];
-const aiMoves = [];
 const HORIZONTAL = "HORIZONTAL";
 const DIAGONAL = "DIAGONAL";
-const ANY = "ANY";
+const VERTICAL = "VERTICAL";
+const checkingQueue = [];
+let previousMove;
 
 function play(id) {
     let squareClicked = document.getElementById(id);
@@ -11,7 +12,6 @@ function play(id) {
     if (squareClicked.textContent) {
         console.log(squareClicked.textContent);
         console.log('Square already taken');
-        return
     } else {
         let position = squareClicked.classList.toString().split(" ");
         let coordinates = {
@@ -21,8 +21,13 @@ function play(id) {
         squareClicked.classList.add('move-text');
         playerMoves.push(coordinates);
         squareClicked.textContent = "x";
-        let neighbors = getNeighbors(coordinates, ANY);
-        checkIfPlayerCompletedLine(coordinates, ANY, 1);
+        let direction;
+        if (previousMove) {
+            direction = determineDirection(previousMove, coordinates)
+        }
+        console.log(direction);
+        checkIfPlayerCompletedLine(coordinates, direction, 1);
+        previousMove = coordinates;
     }
 }
 
@@ -43,20 +48,42 @@ function getCoordinates(position) {
 
 function checkIfPlayerCompletedLine(coordinates, directionToContinue, lineLength) {
     console.log("Calculating Result: Previous Coordinates = " + coordinates.yCoordinate + "/" + coordinates.xCoordinate + "; Looking for square in " + directionToContinue + " direction; Line length is " + lineLength);
+    //this is the first turn
+    if (!previousMove) {
+        return false;
+    }
+    checkingQueue.push(coordinates);
     let neighboringSquares = getNeighbors(coordinates, directionToContinue);
     for (let i = 0; i < neighboringSquares.length; i++) {
         let square = neighboringSquares[i];
+        if (contains(checkingQueue, square) !== -1) {
+            continue;
+        }
         if (isSquareXMarked(square)) {
-            lineLength++;
+            checkingQueue.push(square);
+            if (!areCoordinatesSame(coordinates, square)) {
+                lineLength++;
+                console.log("Found some marked neighbors at " + coordinates.yCoordinate + "/" + coordinates.xCoordinate + ". Line length is now " + lineLength);
+            }
             if (lineLength === 3) {
                 alert("YOU WON")
             }
             if (isDiagonal(coordinates, square)) {
-                checkIfPlayerCompletedLine(square, DIAGONAL, 2);
+                if (doesNextSquareExists(coordinates, square, DIAGONAL)) {
+                    checkIfPlayerCompletedLine(square, DIAGONAL, lineLength);
+                }
+            } else if (isHorizontal(coordinates, square)) {
+                if (doesNextSquareExists(coordinates, square, HORIZONTAL)) {
+                    checkIfPlayerCompletedLine(square, HORIZONTAL, lineLength);
+                }
             } else {
-                checkIfPlayerCompletedLine(square, HORIZONTAL, 2);
+                if(doesNextSquareExists(coordinates, square, VERTICAL)){
+                    checkIfPlayerCompletedLine(square, VERTICAL, lineLength)
+                }
             }
         }
+        checkingQueue.splice(0, checkingQueue.length);
+        console.log("Cleared checking queue. Length is now " + checkingQueue.length);
         return;
     }
 }
@@ -65,8 +92,12 @@ function isDiagonal(coordinateA, coordinateB) {
     return (coordinateA.yCoordinate !== coordinateB.yCoordinate) && (coordinateA.xCoordinate !== coordinateB.xCoordinate);
 }
 
-function isHorizontalOrVertical(coordinateA, coordinateB) {
-    return ((coordinateA.yCoordinate === coordinateB.yCoordinate) && (coordinateA.xCoordinate !== coordinateB.xCoordinate)) || ((coordinateA.yCoordinate !== coordinateB.yCoordinate) && (coordinateA.xCoordinate === coordinateB.xCoordinate));
+function isHorizontal(coordinateA, coordinateB) {
+    return coordinateA.yCoordinate === coordinateB.yCoordinate && coordinateA.xCoordinate !== coordinateB.xCoordinate;
+}
+
+function isVertical(coordinateA, coordinateB) {
+    return coordinateA.yCoordinate !== coordinateB.yCoordinate && coordinateA.xCoordinate === coordinateB.xCoordinate;
 }
 
 function getNeighbors(coordinates, direction) {
@@ -81,11 +112,15 @@ function getNeighbors(coordinates, direction) {
                 !(neighborSquare.yCoordinate === coordinates.yCoordinate && neighborSquare.xCoordinate === coordinates.xCoordinate) &&
                 (neighborSquare.yCoordinate < 3 && neighborSquare.xCoordinate < 3)) {
                 if (direction === HORIZONTAL) {
-                    if (isHorizontalOrVertical(neighborSquare, coordinates)) {
+                    if (isHorizontal(neighborSquare, coordinates)) {
                         result.push(neighborSquare);
                     }
+                } else if (direction === VERTICAL) {
+                    if (isVertical(neighborSquare, coordinates)) {
+                        result.push(neighborSquare)
+                    }
                 } else if (direction === DIAGONAL) {
-                    if (isDiagonal(neighborSquare, coordinates)){
+                    if (isDiagonal(neighborSquare, coordinates)) {
                         result.push(neighborSquare);
                     }
                 } else {
@@ -105,39 +140,49 @@ function areCoordinatesSame(firstCoordinates, secondCoordinates) {
 
 function isSquareXMarked(coordinate) {
     for (let i = 0; i < playerMoves.length; i++) {
-        if(areCoordinatesSame(playerMoves[i], coordinate)){
+        if (areCoordinatesSame(playerMoves[i], coordinate)) {
             return coordinate;
         }
     }
     return false;
 }
 
-function isSquareOMarked(coordinate) {
-
+function determineDirection(previousCoordinates, currentCoordinates) {
+    if (previousCoordinates.yCoordinate !== currentCoordinates.yCoordinate && previousCoordinates.xCoordinate !== currentCoordinates.xCoordinate) {
+        return DIAGONAL;
+    } else if (previousCoordinates.yCoordinate !== currentCoordinates.yCoordinate) {
+        return VERTICAL;
+    } else {
+        return HORIZONTAL;
+    }
 }
 
-function containsCoordinates(array, valueToFind) {
-    return (array[0] === valueToFind[0]) && (array[1] === valueToFind[1]);
-}
-
-function hasDiagonalOptions(coordinates) {
-    //if square is in corner of top or bottom row
-    if ((coordinates[0] === 0 || coordinates[0] === 2) && ((coordinates[1] === 0 || coordinates[1] === 2) || (coordinates[1] === 0 || coordinates[1] === 2))) {
+function doesNextSquareExists(previousCoordinates, currentCoordinates, direction) {
+    if (isMiddleSquare(currentCoordinates)) {
         return true;
     }
-    //if square is in the middle of middle row
-    else if (coordinates[0] === 1 && coordinates[1] === 1) {
-        return true;
+    let neighbors = getNeighbors(currentCoordinates, direction);
+    if (previousCoordinates) {
+        let previousIndex = contains(neighbors, previousCoordinates);
+        console.log("---" + previousIndex);
+        if (previousIndex !== -1) {
+            neighbors.splice(previousIndex, 1);
+        }
     }
-    return false;
+    console.log("****" + neighbors);
+    return !(neighbors.length === 0);
 }
 
-function aiMove() {
-    let aiChoiceSquare = document.getElementById('mid');
-    let position = aiChoiceSquare.classList.toString().split(" ");
-    let coordinates = [getCoordinates(position[0]), getCoordinates(position[1])];
-    aiChoiceSquare.classList.add('move-text');
-    aiMoves.push(coordinates);
-    aiChoiceSquare.textContent = "O";
-    return getNeighbors(coordinates);
+function isMiddleSquare(coordinates) {
+    return coordinates.yCoordinate === 1 && coordinates.xCoordinate === 1;
+}
+
+function contains(array, object) {
+    for (let i = 0; i < array.length; i++) {
+        let item = array[i];
+        if (areCoordinatesSame(item, object)) {
+            return i;
+        }
+    }
+    return -1;
 }
