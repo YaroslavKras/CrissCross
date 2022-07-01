@@ -1,14 +1,21 @@
-const field = document.getElementById('gaming-field');
+
 const playerMoves = [];
+const aiMoves = [];
 const HORIZONTAL = "HORIZONTAL";
 const DIAGONAL = "DIAGONAL";
 const VERTICAL = "VERTICAL";
-const checkingQueue = [];
+const PLAYER = "PLAYER";
+const AI = "AI";
+let turnOwner = PLAYER;
 let previousMove;
 
 function play(id) {
+    if (!(turnOwner === PLAYER)) {
+        console.log("NOT YOUR TURN");
+        return;
+    }
     let squareClicked = document.getElementById(id);
-    console.log(field);
+    turnOwner = PLAYER;
     if (squareClicked.textContent) {
         console.log(squareClicked.textContent);
         console.log('Square already taken');
@@ -21,15 +28,46 @@ function play(id) {
         squareClicked.classList.add('move-text');
         playerMoves.push(coordinates);
         squareClicked.textContent = "x";
-        let direction;
-        if (previousMove) {
-            direction = determineDirection(previousMove, coordinates)
-        }
-        console.log(direction);
-        checkIfPlayerCompletedLine(coordinates, direction, 1);
         previousMove = coordinates;
+        console.log(checkWinCondition());
+        turnOwner = AI;
+        makeAImove();
+    }
+
+}
+
+function makeAImove() {
+    let midSquare = document.getElementById("mid-mid");
+    let position = midSquare.classList.toString().split(" ");
+    let squareCoord = {
+        yCoordinate: getCoordinates(position[0]),
+        xCoordinate: getCoordinates(position[1])
+    }
+    if (!isSquareMarked(squareCoord)) {
+        midSquare.textContent = "O";
+        aiMoves.push(squareCoord);
+        turnOwner = PLAYER;
+    } else {
+        while (turnOwner === AI) {
+            let yCoord = Math.floor(Math.random() * (3));
+            let xCoord = Math.floor(Math.random() * (3));
+            let square = {
+                yCoordinate: yCoord,
+                xCoordinate: xCoord
+            }
+            if (!isSquareMarked(square)) {
+                let id = getIdForY(square.yCoordinate) + "-" + getIdForX(square.xCoordinate);
+                let element = document.getElementById(id);
+                element.textContent = "O";
+                turnOwner = PLAYER;
+            } else if ((aiMoves.length + playerMoves.length) === 9) {
+                turnOwner = PLAYER;
+                break;
+            }
+        }
     }
 }
+
 
 function getCoordinates(position) {
     switch (position) {
@@ -46,47 +84,55 @@ function getCoordinates(position) {
     }
 }
 
-function checkIfPlayerCompletedLine(coordinates, directionToContinue, lineLength) {
-    console.log("Calculating Result: Previous Coordinates = " + coordinates.yCoordinate + "/" + coordinates.xCoordinate + "; Looking for square in " + directionToContinue + " direction; Line length is " + lineLength);
-    //this is the first turn
-    if (!previousMove) {
-        return false;
-    }
-    checkingQueue.push(coordinates);
-    let neighboringSquares = getNeighbors(coordinates, directionToContinue);
-    for (let i = 0; i < neighboringSquares.length; i++) {
-        let square = neighboringSquares[i];
-        if (contains(checkingQueue, square) !== -1) {
-            continue;
-        }
-        if (isSquareXMarked(square)) {
-            checkingQueue.push(square);
-            if (!areCoordinatesSame(coordinates, square)) {
-                lineLength++;
-                console.log("Found some marked neighbors at " + coordinates.yCoordinate + "/" + coordinates.xCoordinate + ". Line length is now " + lineLength);
-            }
-            if (lineLength === 3) {
-                alert("YOU WON")
-            }
-            if (isDiagonal(coordinates, square)) {
-                if (doesNextSquareExists(coordinates, square, DIAGONAL)) {
-                    checkIfPlayerCompletedLine(square, DIAGONAL, lineLength);
-                }
-            } else if (isHorizontal(coordinates, square)) {
-                if (doesNextSquareExists(coordinates, square, HORIZONTAL)) {
-                    checkIfPlayerCompletedLine(square, HORIZONTAL, lineLength);
-                }
-            } else {
-                if(doesNextSquareExists(coordinates, square, VERTICAL)){
-                    checkIfPlayerCompletedLine(square, VERTICAL, lineLength)
-                }
-            }
-        }
-        checkingQueue.splice(0, checkingQueue.length);
-        console.log("Cleared checking queue. Length is now " + checkingQueue.length);
-        return;
+function getIdForY(coordinates) {
+    switch (coordinates) {
+        case 0:
+            return 'upper';
+        case 1:
+            return 'mid';
+        case 2:
+            return 'lower';
+        default:
+            return "";
     }
 }
+
+function getIdForX(coordinates) {
+    switch (coordinates) {
+        case 0:
+            return 'left';
+        case 1:
+            return 'mid';
+        case 2:
+            return 'right';
+        default:
+            return "";
+    }
+}
+
+function checkWinCondition(turnOwner) {
+    if (turnOwner === PLAYER){
+        return playerMoves.some(haveCompletedLines);
+
+    } else {
+        return aiMoves.some(haveCompletedLines);
+    }
+}
+
+function haveCompletedLines(coordinates) {
+    let horizontalLine = getNeighbors(coordinates, HORIZONTAL);
+    let verticalLine = getNeighbors(coordinates, VERTICAL);
+    let diagonalLine = getNeighbors(coordinates, DIAGONAL);
+    //Add this square to the line, so it is included in checkWinCondition too
+    horizontalLine.push(coordinates);
+    verticalLine.push(coordinates);
+    diagonalLine.push(coordinates);
+    let isHLineCompleted = horizontalLine.filter(isSquareXMarked).length > 2;
+    let isVLineCompleted = verticalLine.filter(isSquareXMarked).length > 2;
+    let isDLineCompleted = diagonalLine.filter(isSquareXMarked).length > 2;
+    return isHLineCompleted || isVLineCompleted || isDLineCompleted;
+}
+
 
 function isDiagonal(coordinateA, coordinateB) {
     return (coordinateA.yCoordinate !== coordinateB.yCoordinate) && (coordinateA.xCoordinate !== coordinateB.xCoordinate);
@@ -138,6 +184,10 @@ function areCoordinatesSame(firstCoordinates, secondCoordinates) {
     return JSON.stringify(firstCoordinates) === JSON.stringify(secondCoordinates);
 }
 
+function isSquareMarked(coordinate) {
+    return isSquareOMarked(coordinate) || isSquareXMarked(coordinate);
+}
+
 function isSquareXMarked(coordinate) {
     for (let i = 0; i < playerMoves.length; i++) {
         if (areCoordinatesSame(playerMoves[i], coordinate)) {
@@ -147,42 +197,11 @@ function isSquareXMarked(coordinate) {
     return false;
 }
 
-function determineDirection(previousCoordinates, currentCoordinates) {
-    if (previousCoordinates.yCoordinate !== currentCoordinates.yCoordinate && previousCoordinates.xCoordinate !== currentCoordinates.xCoordinate) {
-        return DIAGONAL;
-    } else if (previousCoordinates.yCoordinate !== currentCoordinates.yCoordinate) {
-        return VERTICAL;
-    } else {
-        return HORIZONTAL;
-    }
-}
-
-function doesNextSquareExists(previousCoordinates, currentCoordinates, direction) {
-    if (isMiddleSquare(currentCoordinates)) {
-        return true;
-    }
-    let neighbors = getNeighbors(currentCoordinates, direction);
-    if (previousCoordinates) {
-        let previousIndex = contains(neighbors, previousCoordinates);
-        console.log("---" + previousIndex);
-        if (previousIndex !== -1) {
-            neighbors.splice(previousIndex, 1);
+function isSquareOMarked(coordinate) {
+    for (let i = 0; i < aiMoves.length; i++) {
+        if (areCoordinatesSame(aiMoves[i], coordinate)) {
+            return coordinate;
         }
     }
-    console.log("****" + neighbors);
-    return !(neighbors.length === 0);
-}
-
-function isMiddleSquare(coordinates) {
-    return coordinates.yCoordinate === 1 && coordinates.xCoordinate === 1;
-}
-
-function contains(array, object) {
-    for (let i = 0; i < array.length; i++) {
-        let item = array[i];
-        if (areCoordinatesSame(item, object)) {
-            return i;
-        }
-    }
-    return -1;
+    return false;
 }
