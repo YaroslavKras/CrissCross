@@ -26,51 +26,56 @@ body {
     background-color: white;
 }
 .move-image{
-    width: 90%; /* or any custom size */
-    height: 90%;
+    width: 90%; 
+    height: 50%;
+    align-content: center;
     object-fit: contain;
 }
 
-.upper-left {
+.move-text{
+    text-align: center;
+}
+
+.upper.left {
     border-right: var(--border);
     border-bottom: var(--border);
 }
 
-.upper-mid {
+.upper.mid {
     border: var(--border);
     border-top: 0;
 }
 
-.upper-right {
+.upper.right {
     border-left: var(--border);
     border-bottom: var(--border);
 }
 
-.mid-left {
+.mid.left {
     border: var(--border);
     border-left: 0;
 }
 
-.mid {
+.mid.mid {
     border: var(--border);
 }
 
-.mid-right {
+.mid.right {
     border: var(--border);
     border-right: 0;
 }
 
-.lower-left {
+.lower.left {
     border-right: var(--border);
     border-top: var(--border);
 }
 
-.lower-mid {
+.lower.mid {
     border: var(--border);
     border-bottom: 0;
 }
 
-.lower-right {
+.lower.right {
     border-left: var(--border);
     border-top: var(--border);
 }
