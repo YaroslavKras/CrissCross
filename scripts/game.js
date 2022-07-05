@@ -1,4 +1,3 @@
-
 const playerMoves = [];
 const aiMoves = [];
 const HORIZONTAL = "HORIZONTAL";
@@ -47,6 +46,16 @@ function makeAImove() {
         midSquare.textContent = "O";
         aiMoves.push(squareCoord);
         turnOwner = PLAYER;
+    } else if (playerMoves.length === 1) {
+        //Mark a corner if center is marked on a first turn, otherwise defeat is almost guaranteed
+        let horizontal = ['upper', 'lower'];
+        let vertical = ['left', 'right'];
+        let horizontalId = Math.floor(Math.random() * 2);
+        let verticalId = Math.floor(Math.random() * 2);
+        let id = getIdForY(horizontal[horizontalId]) + "-" + getIdForX(vertical[verticalId]);
+        let element = document.getElementById(id);
+        element.textContent = "O";
+        turnOwner = PLAYER;
     } else {
         while (turnOwner === AI) {
             let yCoord = Math.floor(Math.random() * (3));
@@ -68,6 +77,23 @@ function makeAImove() {
     }
 }
 
+function determineBlockMove() {
+    let blockMoveCoordinates = [];
+    for (const move of playerMoves) {
+        let horizontalLine = getLineOfLength(move, 2, HORIZONTAL);
+        let verticalLine = getLineOfLength(move, 2, VERTICAL);
+        let diagonalLine = getLineOfLength(move, 2, DIAGONAL);
+        if(horizontalLine !== null){
+            //get missing coordinate and add it to result array
+        }
+        if (verticalLine !== null){
+
+        }
+        if (diagonalLine !== null){
+
+        }
+    }
+}
 
 function getCoordinates(position) {
     switch (position) {
@@ -111,12 +137,25 @@ function getIdForX(coordinates) {
 }
 
 function checkWinCondition(turnOwner) {
-    if (turnOwner === PLAYER){
+    if (turnOwner === PLAYER) {
         return playerMoves.some(haveCompletedLines);
 
     } else {
         return aiMoves.some(haveCompletedLines);
     }
+}
+
+function getLineOfLength(coordinates, length, direction) {
+    let line = getNeighbors(coordinates, direction);
+    let verticalLine = getNeighbors(coordinates, VERTICAL);
+    let diagonalLine = getNeighbors(coordinates, DIAGONAL);
+    //Add this square to the line, so it is included
+    line.push(coordinates);
+    line.filter(isSquareXMarked);
+    if(line.length > length){
+        return line;
+    }
+    return null;
 }
 
 function haveCompletedLines(coordinates) {
