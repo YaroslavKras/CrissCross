@@ -52,27 +52,40 @@ function makeAImove() {
         let vertical = ['left', 'right'];
         let horizontalId = Math.floor(Math.random() * 2);
         let verticalId = Math.floor(Math.random() * 2);
-        let id = getIdForY(horizontal[horizontalId]) + "-" + getIdForX(vertical[verticalId]);
+        let id = horizontal[horizontalId] + "-" + vertical[verticalId];
         let element = document.getElementById(id);
         element.textContent = "O";
         turnOwner = PLAYER;
     } else {
         while (turnOwner === AI) {
-            let yCoord = Math.floor(Math.random() * (3));
-            let xCoord = Math.floor(Math.random() * (3));
-            let square = {
-                yCoordinate: yCoord,
-                xCoordinate: xCoord
-            }
-            if (!isSquareMarked(square)) {
-                let id = getIdForY(square.yCoordinate) + "-" + getIdForX(square.xCoordinate);
+            let mustDoMoves = determineBlockMove();
+            if(mustDoMoves.length === 0){
+                while (turnOwner === AI) {
+                    let yCoord = Math.floor(Math.random() * (3));
+                    let xCoord = Math.floor(Math.random() * (3));
+                    let square = {
+                        yCoordinate: yCoord,
+                        xCoordinate: xCoord
+                    }
+                    if (!isSquareMarked(square)) {
+                        let id = getIdForY(square.yCoordinate) + "-" + getIdForX(square.xCoordinate);
+                        let element = document.getElementById(id);
+                        element.textContent = "O";
+                        turnOwner = PLAYER;
+                    } else if ((aiMoves.length + playerMoves.length) === 9) {
+                        turnOwner = PLAYER;
+                        break;
+                    }
+                }
+            } else {
+                //If theres more than one--it doesnt matter at this point, so choose the first one
+                let mustDoMoveCoordinate = mustDoMoves[0];
+                let id = getIdForY(mustDoMoveCoordinate.yCoordinate) + "-" + getIdForX(mustDoMoveCoordinate.xCoordinate);
                 let element = document.getElementById(id);
-                element.textContent = "O";
+                element.textContent = "0";
                 turnOwner = PLAYER;
-            } else if ((aiMoves.length + playerMoves.length) === 9) {
-                turnOwner = PLAYER;
-                break;
             }
+
         }
     }
 }
@@ -83,16 +96,55 @@ function determineBlockMove() {
         let horizontalLine = getLineOfLength(move, 2, HORIZONTAL);
         let verticalLine = getLineOfLength(move, 2, VERTICAL);
         let diagonalLine = getLineOfLength(move, 2, DIAGONAL);
-        if(horizontalLine !== null){
+        if (horizontalLine !== null) {
             //get missing coordinate and add it to result array
+            let xOptions = [0, 1, 2];
+            let yCoordinate = horizontalLine[0].yCoordinate;
+            for (const coordinate of horizontalLine) {
+                let xValue = coordinate.xCoordinate;
+                let indexOfX = xOptions.indexOf(xValue);
+                if (indexOfX !== -1) {
+                    xOptions.splice(indexOfX, 1);
+                }
+            }
+            let xCoordinate = xOptions[0];
+            blockMoveCoordinates.push({yCoordinate: yCoordinate, xCoordinate: xCoordinate})
         }
-        if (verticalLine !== null){
-
+        if (verticalLine !== null) {
+            let yOptions = [0, 1, 2];
+            let xCoordinate = verticalLine[0].xCoordinate;
+            for (const coordinate of verticalLine) {
+                let yValue = coordinate.yCoordinate;
+                let indexOfY = yOptions.indexOf(yValue);
+                if (indexOfY !== -1) {
+                    yOptions.splice(indexOfY, 1);
+                }
+            }
+            let yCoordinate = yOptions[0];
+            blockMoveCoordinates.push({yCoordinate: yCoordinate, xCoordinate: xCoordinate})
         }
-        if (diagonalLine !== null){
+        if (diagonalLine !== null) {
+            let yOptions = [0, 1, 2];
+            let xOptions = [0, 1, 2];
+            for (const coordinate of diagonalLine) {
+                let yValue = coordinate.yCoordinate;
+                let indexOfY = yOptions.indexOf(yValue);
+                if (indexOfY !== -1) {
+                    yOptions.splice(indexOfY, 1);
+                }
+                let xValue = coordinate.xCoordinate;
+                let indexOfX = xOptions.indexOf(xValue);
+                if (indexOfX !== -1) {
+                    xOptions.splice(indexOfX, 1);
+                }
+            }
 
+            let yCoordinate = yOptions[0];
+            let xCoordinate = xOptions[0];
+            blockMoveCoordinates.push({yCoordinate: yCoordinate, xCoordinate: xCoordinate})
         }
     }
+    return blockMoveCoordinates;
 }
 
 function getCoordinates(position) {
@@ -101,6 +153,7 @@ function getCoordinates(position) {
         case 'left':
             return 0;
         case 'mid':
+        case 'center':
             return 1;
         case 'lower':
         case 'right':
@@ -147,12 +200,9 @@ function checkWinCondition(turnOwner) {
 
 function getLineOfLength(coordinates, length, direction) {
     let line = getNeighbors(coordinates, direction);
-    let verticalLine = getNeighbors(coordinates, VERTICAL);
-    let diagonalLine = getNeighbors(coordinates, DIAGONAL);
-    //Add this square to the line, so it is included
     line.push(coordinates);
-    line.filter(isSquareXMarked);
-    if(line.length > length){
+    line = line.filter(isSquareXMarked);
+    if (line.length >= length) {
         return line;
     }
     return null;
@@ -217,7 +267,6 @@ function getNeighbors(coordinates, direction) {
     }
     return result;
 }
-
 
 function areCoordinatesSame(firstCoordinates, secondCoordinates) {
     return JSON.stringify(firstCoordinates) === JSON.stringify(secondCoordinates);
