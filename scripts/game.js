@@ -55,11 +55,16 @@ function makeAImove() {
         let id = horizontal[horizontalId] + "-" + vertical[verticalId];
         let element = document.getElementById(id);
         element.textContent = "O";
+        let moveCoordinate = {
+            yCoordinate: getCoordinates(horizontal[horizontalId]),
+            xCoordinate: getCoordinates(vertical[verticalId])
+        }
+        aiMoves.push(moveCoordinate);
         turnOwner = PLAYER;
     } else {
         while (turnOwner === AI) {
             let mustDoMoves = determineBlockMove();
-            if(mustDoMoves.length === 0){
+            if (mustDoMoves.length === 0) {
                 while (turnOwner === AI) {
                     let yCoord = Math.floor(Math.random() * (3));
                     let xCoord = Math.floor(Math.random() * (3));
@@ -83,11 +88,21 @@ function makeAImove() {
                 let id = getIdForY(mustDoMoveCoordinate.yCoordinate) + "-" + getIdForX(mustDoMoveCoordinate.xCoordinate);
                 let element = document.getElementById(id);
                 element.textContent = "0";
+                aiMoves.push(mustDoMoveCoordinate);
                 turnOwner = PLAYER;
             }
 
         }
     }
+}
+
+function contains(array, coordinates) {
+    for (const element of array) {
+        if (areCoordinatesSame(element, coordinates)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 function determineBlockMove() {
@@ -108,7 +123,10 @@ function determineBlockMove() {
                 }
             }
             let xCoordinate = xOptions[0];
-            blockMoveCoordinates.push({yCoordinate: yCoordinate, xCoordinate: xCoordinate})
+            let blockMove = {yCoordinate: yCoordinate, xCoordinate: xCoordinate};
+            if (!contains(blockMoveCoordinates, blockMove)) {
+                blockMoveCoordinates.push()
+            }
         }
         if (verticalLine !== null) {
             let yOptions = [0, 1, 2];
@@ -121,7 +139,10 @@ function determineBlockMove() {
                 }
             }
             let yCoordinate = yOptions[0];
-            blockMoveCoordinates.push({yCoordinate: yCoordinate, xCoordinate: xCoordinate})
+            let blockMove = {yCoordinate: yCoordinate, xCoordinate: xCoordinate};
+            if (!contains(blockMoveCoordinates, blockMove)) {
+                blockMoveCoordinates.push()
+            }
         }
         if (diagonalLine !== null) {
             let yOptions = [0, 1, 2];
@@ -141,7 +162,15 @@ function determineBlockMove() {
 
             let yCoordinate = yOptions[0];
             let xCoordinate = xOptions[0];
-            blockMoveCoordinates.push({yCoordinate: yCoordinate, xCoordinate: xCoordinate})
+            let blockMove = {yCoordinate: yCoordinate, xCoordinate: xCoordinate};
+            if (!contains(blockMoveCoordinates, blockMove)) {
+                blockMoveCoordinates.push()
+            }
+        }
+    }
+    for (const [index, move] of blockMoveCoordinates.entries()) {
+        if (contains(aiMoves, move)) {
+            blockMoveCoordinates.splice(index, 1);
         }
     }
     return blockMoveCoordinates;
